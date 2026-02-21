@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KCNHS Smart Campus Locator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* [KEEPING YOUR ORIGINAL STYLES EXACTLY AS THEY WERE] */
+        :root { --school-blue: #004a99; --golden-accent: #f1c40f; --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(255, 255, 255, 0.4); --dark-overlay: rgba(0, 20, 40, 0.85); --admin-red: #c0392b; --admin-green: #27ae60; --admin-purple: #8e44ad; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; overflow: hidden; background: #f0f2f5; }
+        #map { width: 100%; height: 100vh; background: #f3f3f3; filter: blur(4px); transition: filter 0.8s ease; }
+        #map.active { filter: blur(0px); }
+        #standby-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-overlay); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; transition: opacity 0.5s ease, visibility 0.5s; cursor: pointer; }
+        #standby-screen.hidden { opacity: 0; visibility: hidden; }
+        .standby-content h2 { font-size: 48px; margin: 0; font-weight: 700; }
+        .standby-content h3 { font-size: 32px; color: var(--golden-accent); margin: 10px 0 40px 0; font-weight: 300; font-style: italic; }
+        .pulse-btn { font-size: 18px; text-transform: uppercase; letter-spacing: 2px; background: rgba(255, 255, 255, 0.1); padding: 15px 40px; border-radius: 50px; border: 1px solid rgba(255, 255, 255, 0.3); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; border-color: var(--golden-accent); } 100% { transform: scale(1); opacity: 0.8; } }
+        .overlay-container { position: absolute; top: 20px; left: 20px; z-index: 1000; width: 360px; pointer-events: none; opacity: 0; transform: translateX(-50px); transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .overlay-container.visible { opacity: 1; transform: translateX(0); pointer-events: auto; }
+        #dest-photo-island { position: absolute; left: 20px; bottom: 20px; z-index: 1000; width: 320px; max-width: calc(100vw - 40px); opacity: 0; visibility: hidden; transform: translateY(20px); transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s; pointer-events: auto; }
+        #dest-photo-island.visible { opacity: 1; visibility: visible; transform: translateY(0); }
+        #dest-photo-island .glass-panel { margin-bottom: 0; }
+        #dest-photo-island .dest-photo-title { font-size: 16px; font-weight: 700; color: var(--school-blue); margin-bottom: 8px; }
+        #dest-photo-island #dest-photo-img { width: 100%; border-radius: 12px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+        #dest-photo-island .dest-photo-desc { font-size: 13px; color: #444; margin-top: 10px; line-height: 1.4; }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); margin-bottom: 15px; }
+        .header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .school-logo { width: 54px; height: 54px; background: var(--school-blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px; border: 2px solid var(--golden-accent); cursor: pointer; user-select: none; transition: transform 0.2s; }
+        .school-logo:active { transform: scale(0.9); }
+        .title-group h1 { font-size: 18px; margin: 0; color: var(--school-blue); font-weight: 700; }
+        .title-group p { font-size: 12px; margin: 0; color: #666; }
+        .search-box { position: relative; margin-bottom: 10px; }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.1); font-size: 14px; box-sizing: border-box; outline: none; margin-bottom: 8px; font-family: inherit; background: white; }
+        .instruction-text { font-size: 13px; color: #444; line-height: 1.4; padding: 8px 0; border-top: 1px solid rgba(0,0,0,0.05); }
+        .building-description { margin-top: 10px; padding: 12px; background: rgba(0, 74, 153, 0.08); border-left: 4px solid var(--school-blue); border-radius: 0 8px 8px 0; font-size: 13px; color: #222; display: none; animation: slideDown 0.3s ease-out; }
+        @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .btn-navigate { width: 100%; padding: 14px; background: var(--school-blue); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-navigate:hover { background: #003a7a; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,74,153,0.3); }
+        #admin-panel { position: absolute; top: 20px; right: 20px; z-index: 3000; width: 380px; display: none; max-height: 90vh; overflow-y: auto; }
+        #admin-panel.visible { display: block; }
+        .admin-header { color: var(--admin-red); font-weight: 800; font-size: 16px; margin-bottom: 15px; display: flex; justify-content: space-between; position: sticky; top: 0; background: inherit; padding-top: 5px; }
+        .admin-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
+        .admin-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #555; margin-bottom: 6px; display: block; }
+        .coord-pill { background: #1a1a1a; color: #00ff00; padding: 10px; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 14px; margin-bottom: 12px; display: block; text-align: center; border: 1px solid #333; }
+        .admin-btn { width: 100%; padding: 12px; background: #555; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 13px; transition: background 0.2s; margin-top: 5px; }
+        .admin-btn.save { background: var(--school-blue); font-weight: bold; }
+        .admin-btn.update { background: var(--admin-green); font-weight: bold; }
+        .admin-btn.mode { background: var(--admin-purple); font-weight: bold; }
+        .admin-btn.download { background: #e67e22; font-weight: bold; }
+        .location-list { margin-top: 10px; background: white; border-radius: 12px; max-height: 180px; overflow-y: auto; border: 1px solid #eee; }
+        .location-item { padding: 10px 15px; border-bottom: 1px solid #f5f5f5; font-size: 13px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; }
+        .location-item:hover { background: #f0f7ff; }
+        .path-animation { stroke-dasharray: 12, 12; animation: dash 0.8s linear infinite; }
+        @keyframes dash { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+        .admin-node-handle { background: white; border: 2px solid var(--admin-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: var(--admin-purple); }
+        .kiosk-icon { background: transparent; }
+        .kiosk-icon-inner { width: 24px; height: 24px; border-radius: 50%; background: var(--school-blue); border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.6); position: relative; }
+        .kiosk-icon-inner::after { content: ""; position: absolute; left: 50%; top: 50%; width: 24px; height: 24px; margin-left: -12px; margin-top: -12px; border-radius: 50%; border: 2px solid var(--golden-accent); animation: kioskPulse 1.8s ease-out infinite; }
+        @keyframes kioskPulse { 0% { transform: scale(0.9); opacity: 0.8; } 70% { transform: scale(1.4); opacity: 0; } 100% { transform: scale(1.4); opacity: 0; } }
+        #admin-pin-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 3500; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; }
+        #admin-pin-overlay.visible { opacity: 1; visibility: visible; }
+        .pin-card { width: 320px; max-width: 90vw; background: var(--glass-bg); border-radius: 16px; padding: 20px 20px 16px; box-shadow: 0 18px 45px rgba(0,0,0,0.4); border: 1px solid var(--glass-border); }
+        .pin-card h3 { margin: 0 0 4px 0; font-size: 18px; color: var(--school-blue); }
+        .pin-card p { margin: 0 0 12px 0; font-size: 13px; color: #555; }
+        .pin-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12); font-size: 16px; letter-spacing: 4px; text-align: center; box-sizing: border-box; }
+        .pin-error { min-height: 16px; font-size: 12px; color: var(--admin-red); margin-top: 6px; }
+        .pin-actions { margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px; }
+        .pin-actions button { border-radius: 999px; border: none; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+        .pin-btn-cancel { background: #ececec; color: #555; }
+        .pin-btn-confirm { background: var(--school-blue); color: #fff; }
+        .file-upload-label { display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; border-radius: 999px; background: var(--school-blue); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; margin: 4px 0 8px 0; }
+        .file-upload-label span { pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="standby-screen" onclick="exitStandby()">
+        <div class="standby-content">
+            <h2>Looking for something?</h2>
+            <h3>May hinahanap ka ba?</h3>
+            <div class="pulse-btn">Touch here to begin</div>
+        </div>
+    </div>
+
+    <div id="admin-pin-overlay" onclick="maybeClosePinOverlay(event)">
+        <div class="pin-card" onclick="event.stopPropagation()">
+            <h3>Admin Access</h3>
+            <p>Enter admin PIN to open calibration tools.</p>
+            <input type="password" id="admin-pin-input" class="pin-input" maxlength="6" inputmode="numeric" autocomplete="off">
+            <div id="admin-pin-error" class="pin-error"></div>
+            <div class="pin-actions">
+                <button class="pin-btn-cancel" onclick="hideAdminPinOverlay()">Cancel</button>
+                <button class="pin-btn-confirm" onclick="submitAdminPin()">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-bar" style="position:fixed; left:50%; bottom:20px; transform:translateX(-50%); min-width:260px; max-width:420px; padding:10px 16px; border-radius:999px; font-size:13px; font-weight:500; text-align:center; color:#fff; background:rgba(0,0,0,0.75); box-shadow:0 6px 20px rgba(0,0,0,0.35); z-index:4000; opacity:0; pointer-events:none; transition:opacity 0.3s ease, transform 0.3s ease;"></div>
+
+    <div class="overlay-container" id="main-ui">
+        <div class="glass-panel">
+            <div class="header">
+                <div class="school-logo" id="logo-trigger" title="Long press 3s for Admin">KCNHS</div>
+                <div class="title-group">
+                    <h1>Campus Locator</h1>
+                    <p>Digital Kiosk Wayfinding</p>
+                </div>
+            </div>
+            <div class="search-box">
+                <input type="text" id="dest-input" list="locations" placeholder="Search a building or room..." autocomplete="off">
+                <datalist id="locations"></datalist>
+                <div class="instruction-text" id="instruction-text">Select a destination and click <b>Start Navigation</b>.</div>
+                <button class="btn-navigate" onclick="startNavigation()"><span>Start Navigation</span></button>
+                <div id="building-desc-box" class="building-description"></div>
+            </div>
+            <div style="text-align: center; margin-top: 12px;">
+                <button onclick="enterStandby()" style="background:none; border:none; color:var(--school-blue); text-decoration:underline; font-size:11px; cursor:pointer; opacity: 0.7;">Reset View</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="dest-photo-island">
+        <div class="glass-panel">
+            <div id="dest-photo-title" class="dest-photo-title"></div>
+            <img id="dest-photo-img" alt="" style="display:none;">
+            <div id="dest-photo-desc" class="dest-photo-desc" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="glass-panel">
+        <div class="admin-header">
+            <span>ADMIN CALIBRATION</span>
+            <button onclick="closeAdmin()" style="border:none; background:none; cursor:pointer; color:#999; font-size: 24px;">✕</button>
+        </div>
+        
+        <div class="admin-section">
+            <span class="admin-label">Coordinate Capture</span>
+            <span id="coord-display" class="coord-pill">[0, 0]</span>
+            <button class="admin-btn mode" id="path-mode-btn" onclick="togglePathMode()">Enable Path Builder Mode</button>
+            <button class="admin-btn undo" id="path-undo-btn" onclick="undoLastJunction()" style="display:none; background:#e67e22;">Undo Last Junction</button>
+        </div>
+
+        <div class="admin-section">
+            <span class="admin-label">Quick Selection</span>
+            <div class="location-list" id="admin-manage-list"></div>
+        </div>
+
+        <div class="admin-section" id="admin-form-container">
+            <span class="admin-label" id="form-title">Building / Section Data</span>
+            <input type="text" id="admin-dest-name" placeholder="Name (e.g. Grade 10-A)">
+            <textarea id="admin-dest-desc" placeholder="Details (e.g. 2nd Floor, Left Wing)" rows="2"></textarea>
+            <span class="admin-label">Location Photo</span>
+            <label class="file-upload-label">
+                <span>Select Image</span>
+                <input type="file" id="admin-dest-image" accept="image/*" style="display:none;">
+            </label>
+            <div id="admin-image-preview-container" style="display:none; margin:6px 0 10px 0;">
+                <img id="admin-image-preview" src="" alt="Preview" style="max-width:100%; border-radius:10px;">
+            </div>
+            <input type="text" id="admin-dest-path" placeholder="Path Sequence (e.g. j1, j2, j3)">
+            
+            <div id="admin-action-btns">
+                <button class="admin-btn save" onclick="adminAddDest()">Add New Place</button>
+            </div>
+            <button class="admin-btn" style="background:#eee; color:#333;" onclick="resetAdminForm()">Clear Fields</button>
+        </div>
+
+        <div class="admin-section" style="border:none;">
+            <div style="background:#fffae6; padding:10px; border-radius:8px; border:1px solid #ffeeba; margin-bottom:10px;">
+                <strong style="color:#d35400; font-size:12px;">⚠ IMPORTANT:</strong>
+                <p style="font-size:11px; margin:5px 0 0 0; color:#555;">
+                    Changes are temporary! Click <b>"Download Data"</b> below. 
+                    Then overwrite your project's <code>data.json</code> file with the downloaded file.
+                </p>
+            </div>
+            <button class="admin-btn download" onclick="downloadJSON()">Download 'data.json'</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // --- CONFIG ---
+        const ADMIN_PIN = '1234';
+        const MAP_IMAGE = 'Map.png'; // Must match your file name
+
+        // --- DATA STORE ---
+        let campusData = {
+            kiosk: [75, 503], 
+            nodes: {},
+            destinations: {}
+        };
+
+        // --- GLOBAL VARS ---
+        let map, currentPathLayer, destMarkerLayer, adminMarker;
+        let lastClickedCoord = [0, 0];
+        let editingKey = null;
+        let idleTimer, statusTimeoutId;
+        let pathMode = false;
+        let tempPathNodes = []; 
+        let tempPathPolyline = null;
+        let currentEditingImageUrl = ""; // Holds Base64 string
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            initMap();
+            loadCampusData();
+            setupEventListeners();
+        };
+
+        function initMap() {
+            map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -2,
+                maxZoom: 2,
+                zoomControl: false
+            });
+            const bounds = [[0, 0], [1000, 1500]];
+            L.imageOverlay(MAP_IMAGE, bounds).addTo(map);
+            map.fitBounds(bounds);
+
+            map.on('click', onMapClick);
+        }
+
+        async function loadCampusData() {
+            try {
+                // Fetch from local file
+                const response = await fetch('data.json');
+                if (!response.ok) throw new Error("No data.json found");
+                const data = await response.json();
+                
+                // Merge into memory
+                if (data.nodes) campusData.nodes = data.nodes;
+                if (data.destinations) campusData.destinations = data.destinations;
+                if (data.kiosk) campusData.kiosk = data.kiosk;
+
+                // Place Kiosk Marker
+                placeKioskMarker();
+                refreshLists();
+            } catch (err) {
+                console.log('Starting with empty data (fresh install).');
+                placeKioskMarker();
+            }
+        }
+
+        function placeKioskMarker() {
+            const kioskIcon = L.divIcon({
+                className: 'kiosk-icon',
+                html: `<div class="kiosk-icon-inner"></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+            L.marker(campusData.kiosk, { icon: kioskIcon }).addTo(map).bindPopup("<b>You are here</b>");
+        }
+
+        // --- FILE DOWNLOAD (THE "SAVE" MECHANISM) ---
+        function downloadJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(campusData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "data.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showStatus("File downloaded! Please upload it to GitHub.", "success");
+        }
+
+        // --- IMAGE HANDLING (BASE64) ---
+        document.getElementById('admin-dest-image').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Limit size check (e.g. 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("Image is too large. Please use an image under 2MB.");
+                this.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                currentEditingImageUrl = event.target.result; // This is the Base64 string
+                const preview = document.getElementById('admin-image-preview');
+                const container = document.getElementById('admin-image-preview-container');
+                preview.src = currentEditingImageUrl;
+                container.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // --- ADMIN FUNCTIONS ---
+        function adminAddDest(isUpdate = false) {
+            const name = document.getElementById('admin-dest-name').value;
+            const desc = document.getElementById('admin-dest-desc').value;
+            const pathInput = document.getElementById('admin-dest-path').value;
+            
+            if (!name) return alert("Please enter a name.");
+
+            if (isUpdate && editingKey && editingKey !== name) {
+                delete campusData.destinations[editingKey];
+            }
+
+            campusData.destinations[name] = {
+                coords: [...lastClickedCoord],
+                description: desc,
+                imageUrl: currentEditingImageUrl || "",
+                path: pathInput ? pathInput.split(',').map(s => s.trim()).filter(Boolean) : []
+            };
+
+            refreshLists();
+            resetAdminForm();
+            if (pathMode) togglePathMode();
+            showStatus(isUpdate ? "Updated! Don't forget to Download." : "Added! Don't forget to Download.", "success");
+        }
+
+        function deleteLocation(name) {
+            if (confirm(`Delete ${name}?`)) {
+                delete campusData.destinations[name];
+                refreshLists();
+                resetAdminForm();
+                showStatus("Deleted. Don't forget to Download.", "info");
+            }
+        }
+
+        // --- STANDARD UI LOGIC (Same as before) ---
+        function showStatus(msg, type) {
+            const bar = document.getElementById('status-bar');
+            bar.textContent = msg;
+            bar.style.background = type === 'success' ? '#27ae60' : type === 'error' ? '#c0392b' : '#004a99';
+            bar.style.opacity = '1';
+            bar.style.transform = 'translateX(-50%) translateY(0)';
+            clearTimeout(statusTimeoutId);
+            statusTimeoutId = setTimeout(() => {
+                bar.style.opacity = '0';
+                bar.style.transform = 'translateX(-50%) translateY(8px)';
+            }, 3000);
+        }
+
+        function refreshLists() {
+            const datalist = document.getElementById('locations');
+            const manageList = document.getElementById('admin-manage-list');
+            datalist.innerHTML = "";
+            manageList.innerHTML = "";
+            Object.keys(campusData.destinations).sort().forEach(name => {
+                let opt = document.createElement('option');
+                opt.value = name;
+                datalist.appendChild(opt);
+                let item = document.createElement('div');
+                item.className = 'location-item';
+                item.innerHTML = `<span><b>${name}</b></span> <span style="color:#666; font-size:11px;">Edit</span>`;
+                item.onclick = (e) => { e.stopPropagation(); loadForEdit(name); };
+                manageList.appendChild(item);
+            });
+        }
+
+        function startNavigation() {
+            const rawName = document.getElementById('dest-input').value.trim();
+            const destKey = Object.keys(campusData.destinations).find(k => k.toLowerCase() === rawName.toLowerCase());
+            const dest = destKey ? campusData.destinations[destKey] : null;
+            if (!dest) return;
+
+            if (currentPathLayer) map.removeLayer(currentPathLayer);
+            if (destMarkerLayer) map.removeLayer(destMarkerLayer);
+
+            const junctionCoords = (dest.path || []).map(id => campusData.nodes[id]).filter(Boolean);
+            const fullRoute = [campusData.kiosk, ...junctionCoords, dest.coords];
+
+            currentPathLayer = L.polyline(fullRoute, { color: 'var(--golden-accent)', weight: 6, opacity: 0.9, dashArray: '12, 12', className: 'path-animation' }).addTo(map);
+            destMarkerLayer = L.marker(dest.coords).addTo(map).bindPopup(`<b>${destKey}</b>`).openPopup();
+            map.flyTo(dest.coords, 0.5, { duration: 1.5 });
+
+            const photoIsland = document.getElementById('dest-photo-island');
+            const photoImg = document.getElementById('dest-photo-img');
+            
+            if (dest.imageUrl) {
+                document.getElementById('dest-photo-title').textContent = destKey;
+                photoImg.src = dest.imageUrl;
+                photoImg.style.display = 'block';
+                document.getElementById('dest-photo-desc').textContent = dest.description;
+                document.getElementById('dest-photo-desc').style.display = dest.description ? 'block' : 'none';
+                photoIsland.classList.add('visible');
+            } else {
+                photoIsland.classList.remove('visible');
+                document.getElementById('building-desc-box').innerHTML = dest.description ? `<strong>Info:</strong><br>${dest.description}` : "";
+                document.getElementById('building-desc-box').style.display = dest.description ? 'block' : 'none';
+            }
+        }
+
+        function loadForEdit(name) {
+            editingKey = name;
+            const dest = campusData.destinations[name];
+            document.getElementById('form-title').innerText = "Updating: " + name;
+            document.getElementById('admin-dest-name').value = name;
+            document.getElementById('admin-dest-desc').value = dest.description || "";
+            document.getElementById('admin-dest-path').value = dest.path.join(', ');
+            currentEditingImageUrl = dest.imageUrl || "";
+            
+            const preview = document.getElementById('admin-image-preview');
+            const container = document.getElementById('admin-image-preview-container');
+            if(currentEditingImageUrl) {
+                preview.src = currentEditingImageUrl;
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+
+            lastClickedCoord = [...dest.coords];
+            document.getElementById('coord-display').innerText = `[${Math.round(lastClickedCoord[0])}, ${Math.round(lastClickedCoord[1])}]`;
+            document.getElementById('admin-action-btns').innerHTML = `<button class="admin-btn update" onclick="adminAddDest(true)">Update Location</button><button class="admin-btn" style="background:#c0392b; margin-top:5px;" onclick="deleteLocation('${name}')">Delete</button>`;
+            
+            map.flyTo(dest.coords, 1);
+            if (adminMarker) map.removeLayer(adminMarker);
+            adminMarker = L.circleMarker(dest.coords, { radius: 10, color: 'red' }).addTo(map);
+        }
+
+        function resetAdminForm() {
+            editingKey = null;
+            document.getElementById('form-title').innerText = "Add New Destination";
+            document.getElementById('admin-dest-name').value = "";
+            document.getElementById('admin-dest-desc').value = "";
+            document.getElementById('admin-dest-image').value = "";
+            document.getElementById('admin-image-preview-container').style.display = 'none';
+            currentEditingImageUrl = "";
+            document.getElementById('admin-dest-path').value = "";
+            document.getElementById('admin-action-btns').innerHTML = `<button class="admin-btn save" onclick="adminAddDest()">Add New Place</button>`;
+            if (adminMarker) map.removeLayer(adminMarker);
+        }
+
+        function onMapClick(e) {
+            const y = e.latlng.lat;
+            const x = e.latlng.lng;
+            lastClickedCoord = [y, x];
+            resetIdleTimer();
+
+            if (document.getElementById('admin-panel').classList.contains('visible')) {
+                if (pathMode) {
+                    addJunctionToPath(e.latlng);
+                } else {
+                    document.getElementById('coord-display').innerText = `[${Math.round(y)}, ${Math.round(x)}]`;
+                    if (adminMarker) map.removeLayer(adminMarker);
+                    adminMarker = L.circleMarker(e.latlng, { radius: 10, color: 'red' }).addTo(map);
+                }
+            }
+        }
+
+        // --- PATH BUILDER ---
+        function togglePathMode() {
+            pathMode = !pathMode;
+            const btn = document.getElementById('path-mode-btn');
+            const undoBtn = document.getElementById('path-undo-btn');
+            if (pathMode) {
+                btn.innerText = "EXIT Path Builder";
+                btn.style.background = "#c0392b";
+                undoBtn.style.display = "block";
+                tempPathNodes = [];
+                if (tempPathPolyline) map.removeLayer(tempPathPolyline);
+                tempPathPolyline = L.polyline([], {color: 'var(--admin-purple)', weight: 3, dashArray: '5,5'}).addTo(map);
+            } else {
+                btn.innerText = "Enable Path Builder Mode";
+                btn.style.background = "var(--admin-purple)";
+                undoBtn.style.display = "none";
+                tempPathNodes.forEach(node => map.removeLayer(node.marker));
+                if (tempPathPolyline) map.removeLayer(tempPathPolyline);
+            }
+        }
+
+        function addJunctionToPath(latlng) {
+            const nodeId = 'j' + (Object.keys(campusData.nodes).length + 1);
+            const marker = L.marker(latlng, { icon: L.divIcon({ className: 'admin-node-handle', html: tempPathNodes.length + 1, iconSize: [24, 24] }), draggable: true }).addTo(map);
+            
+            campusData.nodes[nodeId] = [latlng.lat, latlng.lng];
+            tempPathNodes.push({ id: nodeId, marker: marker });
+            
+            marker.on('drag', updatePathLine);
+            marker.on('dragend', () => { campusData.nodes[nodeId] = [marker.getLatLng().lat, marker.getLatLng().lng]; });
+            updatePathLine();
+        }
+
+        function updatePathLine() {
+            if (!tempPathPolyline) return;
+            tempPathPolyline.setLatLngs(tempPathNodes.map(n => n.marker.getLatLng()));
+            document.getElementById('admin-dest-path').value = tempPathNodes.map(n => n.id).join(', ');
+        }
+
+        function undoLastJunction() {
+            if (tempPathNodes.length === 0) return;
+            const last = tempPathNodes.pop();
+            map.removeLayer(last.marker);
+            delete campusData.nodes[last.id];
+            updatePathLine();
+        }
+
+        // --- STANDBY & UI ---
+        function enterStandby() {
+            document.getElementById('standby-screen').classList.remove('hidden');
+            document.getElementById('map').classList.remove('active');
+            document.getElementById('main-ui').classList.remove('visible');
+            if (currentPathLayer) map.removeLayer(currentPathLayer);
+            if (destMarkerLayer) map.removeLayer(destMarkerLayer);
+            document.getElementById('dest-input').value = "";
+            document.getElementById('dest-photo-island').classList.remove('visible');
+            document.getElementById('building-desc-box').style.display = 'none';
+            map.fitBounds([[0, 0], [1000, 1500]]);
+        }
+        function exitStandby() {
+            document.getElementById('standby-screen').classList.add('hidden');
+            document.getElementById('map').classList.add('active');
+            document.getElementById('main-ui').classList.add('visible');
+            resetIdleTimer();
+        }
+        function resetIdleTimer() {
+            clearTimeout(idleTimer);
+            if (!document.getElementById('admin-panel').classList.contains('visible')) {
+                idleTimer = setTimeout(enterStandby, 120000); // 2 mins
+            }
+        }
+        function setupEventListeners() {
+            const logo = document.getElementById('logo-trigger');
+            let timer;
+            logo.addEventListener('mousedown', () => timer = setTimeout(showAdminPinOverlay, 3000));
+            logo.addEventListener('mouseup', () => clearTimeout(timer));
+            logo.addEventListener('touchstart', () => timer = setTimeout(showAdminPinOverlay, 3000));
+            logo.addEventListener('touchend', () => clearTimeout(timer));
+            window.addEventListener('click', resetIdleTimer);
+        }
+
+        // --- PIN OVERLAY ---
+        function showAdminPinOverlay() { document.getElementById('admin-pin-overlay').classList.add('visible'); }
+        function hideAdminPinOverlay() { document.getElementById('admin-pin-overlay').classList.remove('visible'); }
+        function maybeClosePinOverlay(e) { hideAdminPinOverlay(); }
+        function submitAdminPin() {
+            if(document.getElementById('admin-pin-input').value === ADMIN_PIN) {
+                hideAdminPinOverlay();
+                document.getElementById('admin-panel').classList.add('visible');
+                showStatus("Admin Unlocked", "success");
+            } else {
+                document.getElementById('admin-pin-error').innerText = "Wrong PIN";
+            }
+        }
+        function closeAdmin() { document.getElementById('admin-panel').classList.remove('visible'); if(pathMode) togglePathMode(); }
+    </script>
+</body>
+</html>
