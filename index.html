@@ -121,11 +121,13 @@
             max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; transition: all 0.3s ease;
         }
         #admin-panel.visible { display: block; }
+        
         /* Minimized State */
         #admin-panel.minimized {
-            width: 60px; height: 60px; overflow: hidden; padding: 0; border-radius: 50%;
+            width: 50px; height: 50px; overflow: hidden; padding: 0; border-radius: 50%;
             top: 20px; right: 20px; bottom: auto; left: auto; cursor: pointer;
             display: flex; align-items: center; justify-content: center; background: var(--admin-red);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         #admin-panel.minimized .admin-content-wrapper { display: none; }
         #admin-panel.minimized::after { content: "⚙️"; font-size: 24px; }
@@ -168,16 +170,81 @@
         .pin-btn-confirm { background: var(--school-blue); color: #fff; }
         .file-upload-label { display: flex; align-items: center; justify-content: center; padding: 12px; border-radius: 12px; background: var(--school-blue); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; margin: 4px 0 8px 0; }
 
+        /* --- MOBILE SPECIFIC STYLES --- */
         @media (max-width: 768px) {
-            .standby-content h2 { font-size: 32px; }
-            .standby-content h3 { font-size: 18px; margin-bottom: 30px; }
-            .overlay-container { width: 92%; left: 4%; top: 15px; transform: translateY(-20px); }
-            .overlay-container.visible { transform: translateY(0); }
-            .search-box input { padding: 16px; }
-            #dest-photo-island { width: 92%; left: 4%; bottom: 15px; transform: translateY(100px); }
+            /* 1. Standby Screen: Smaller & Tighter */
+            .standby-content h2 { font-size: 28px; }
+            .standby-content h3 { font-size: 18px; margin-bottom: 25px; }
+            .pulse-btn { padding: 12px 30px; font-size: 14px; }
+
+            /* 2. Top Search Bar: Compact and Semi-Transparent */
+            .overlay-container { 
+                width: 94%; 
+                left: 3%; 
+                top: 10px; 
+                transform: none; /* No slide-in effect on mobile for performance */
+            }
+            
+            /* Make inputs smaller and thinner on mobile */
+            .glass-panel { padding: 15px; border-radius: 16px; }
+            .search-box input { padding: 10px 12px; font-size: 14px; height: 44px; margin-bottom: 5px; }
+            .btn-navigate { padding: 12px; font-size: 14px; height: 44px; margin-top: 5px; }
+            .header { margin-bottom: 10px; }
+            .school-logo { width: 40px; height: 40px; font-size: 10px; }
+            .title-group h1 { font-size: 16px; }
+
+            /* 3. Photo Result: Bottom Sheet Style */
+            #dest-photo-island { 
+                width: 100%; 
+                left: 0; 
+                bottom: 0; 
+                transform: translateY(110%); /* Start hidden below screen */
+            }
             #dest-photo-island.visible { transform: translateY(0); }
-            #admin-panel { width: 100%; height: 100%; top: 0; left: 0; right: 0; bottom: 0; max-height: 100dvh; border-radius: 0; padding-bottom: 80px; }
-            #admin-panel.minimized { width: 50px; height: 50px; top: 10px; right: 10px; border-radius: 50%; }
+            #dest-photo-island .glass-panel { 
+                border-radius: 20px 20px 0 0; /* Only round top */
+                border-bottom: none;
+                padding: 20px;
+            }
+
+            /* 4. Admin Panel: Bottom Drawer (Allows map tap on top half) */
+            #admin-panel { 
+                width: 100%; 
+                height: auto; 
+                max-height: 55vh; /* Takes up bottom 55% of screen */
+                top: auto; 
+                bottom: 0; 
+                right: 0; 
+                left: 0;
+                border-radius: 20px 20px 0 0; 
+                border-left: none; border-right: none; border-bottom: none;
+                padding-bottom: 20px;
+                background: #fff; /* Solid background for visibility */
+            }
+            
+            /* Admin Header fixed inside the drawer */
+            .admin-header { 
+                position: sticky; 
+                top: 0; 
+                background: #fff; 
+                z-index: 10; 
+                padding-bottom: 10px; 
+                border-bottom: 1px solid #eee; 
+            }
+
+            /* Minimized Admin Button: Small and accessible */
+            #admin-panel.minimized { 
+                width: 45px; height: 45px; 
+                top: auto; bottom: 80px; /* Floating above bottom */
+                right: 20px; 
+                left: auto;
+                border-radius: 50%; 
+                z-index: 4000;
+            }
+
+            /* Bigger Tap Targets for Admin Buttons */
+            .admin-btn { padding: 12px; margin-top: 8px; font-size: 14px; }
+            .location-item { padding: 15px 10px; }
         }
     </style>
 </head>
@@ -222,7 +289,7 @@
                 <button class="btn-navigate" onclick="startNavigation()">Start Navigation</button>
                 <div id="building-desc-box" class="building-description"></div>
             </div>
-            <div style="text-align: center; margin-top: 10px;">
+            <div style="text-align: center; margin-top: 5px;">
                 <button onclick="enterStandby()" style="background:none; border:none; color:var(--school-blue); text-decoration:underline; font-size:12px; padding:10px; cursor:pointer; opacity: 0.7;">Reset Map</button>
             </div>
         </div>
@@ -241,14 +308,14 @@
             <div class="admin-header">
                 <span>ADMIN MODE</span>
                 <div>
-                    <button onclick="toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 20px; padding:0 8px; color:#555;">_</button>
-                    <button onclick="closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 20px; padding:0 8px; color:#555;">✕</button>
+                    <button onclick="toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 15px; color:#555; line-height:1;">_</button>
+                    <button onclick="closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 10px; color:#555; line-height:1;">✕</button>
                 </div>
             </div>
             
             <div class="admin-section" style="margin-top:0; border:none; padding-top:0;">
                 <span class="admin-label">View Options</span>
-                <button class="admin-btn" style="background:#7f8c8d; margin-top:0;" onclick="toggleUserUI()">👁 Toggle User UI Islands</button>
+                <button class="admin-btn" style="background:#7f8c8d; margin-top:0;" onclick="toggleUserUI()">👁 Toggle User UI</button>
                 <p style="font-size:10px; color:#666; margin:5px 0 0 0;">*Hides the search box so you can see the map.</p>
             </div>
 
@@ -458,7 +525,11 @@
             map.setView(dest.coords, 0);
             if (adminMarker) map.removeLayer(adminMarker);
             adminMarker = L.circleMarker(dest.coords, { radius: 10, color: 'red' }).addTo(map);
-            if(window.innerWidth < 768) document.getElementById('admin-form-container').scrollIntoView({behavior: "smooth"});
+            if(window.innerWidth < 768) {
+                // On mobile, don't auto scroll, user can see map first
+            } else {
+                document.getElementById('admin-form-container').scrollIntoView({behavior: "smooth"});
+            }
         }
 
         function deleteLocation(name) {
@@ -539,19 +610,12 @@
             } else {
                 mainUI.classList.remove('force-hidden');
                 photoUI.classList.remove('force-hidden');
-                // Re-check visibility logic for photo
-                if(!document.getElementById('dest-photo-img').src.endsWith('.html')) { // rudimentary check
-                    // Don't auto show photo unless navigation active? 
-                    // Let's just leave it to css transitions
-                }
             }
         }
 
         function toggleAdminMinimize() {
             const panel = document.getElementById('admin-panel');
             panel.classList.toggle('minimized');
-            // If minimizing, verify we didn't leave User UI hidden permanently? 
-            // Nah, let the user decide.
         }
 
         function enterStandby() {
