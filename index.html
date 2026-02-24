@@ -137,8 +137,7 @@
         .admin-header {
             color: var(--admin-red); font-weight: 800; font-size: 16px; margin-bottom: 15px;
             display: flex; justify-content: space-between; position: sticky; top: 0; background: inherit; padding-top: 5px;
-            align-items: center;
-            cursor: pointer; /* Clickable header */
+            align-items: center; cursor: pointer;
         }
         .admin-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
         .admin-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #555; margin-bottom: 6px; display: block; }
@@ -179,7 +178,7 @@
             .standby-content h3 { font-size: 18px; margin-bottom: 25px; }
             .pulse-btn { padding: 12px 30px; font-size: 14px; }
 
-            /* Top Search Bar: Compact */
+            /* Top Search Bar */
             .overlay-container { width: 94%; left: 3%; top: 10px; transform: none; }
             .glass-panel { padding: 15px; border-radius: 16px; }
             .search-box input { padding: 10px 12px; font-size: 14px; height: 44px; margin-bottom: 5px; }
@@ -188,55 +187,38 @@
             .school-logo { width: 40px; height: 40px; font-size: 10px; }
             .title-group h1 { font-size: 16px; }
 
-            /* Photo Result: Bottom Sheet */
+            /* Photo Result */
             #dest-photo-island { width: 100%; left: 0; bottom: 0; transform: translateY(110%); }
             #dest-photo-island.visible { transform: translateY(0); }
             #dest-photo-island .glass-panel { border-radius: 20px 20px 0 0; border-bottom: none; padding: 20px; }
 
-            /* --- ADMIN MOBILE: COLLAPSIBLE BOTTOM SHEET --- */
+            /* --- ADMIN MOBILE DRAWER --- */
             #admin-panel { 
-                width: 100%; 
-                height: 55vh; /* Opened height */
-                max-height: 55vh;
+                width: 100%; height: 55vh; max-height: 55vh;
                 top: auto; bottom: 0; right: 0; left: 0;
-                border-radius: 20px 20px 0 0; 
-                border: none;
-                padding-bottom: 20px;
-                background: #fff;
+                border-radius: 20px 20px 0 0; border: none;
+                padding-bottom: 20px; background: #fff;
                 box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
             }
 
-            /* Minimized Mobile State: Dropdown Bar */
+            /* Minimized Drawer: Bar */
             #admin-panel.minimized { 
-                width: 100%; 
-                height: 60px; /* Collapsed height */
+                width: 100%; height: 60px; /* Force height */
                 border-radius: 20px 20px 0 0;
                 top: auto; bottom: 0; right: 0; left: 0;
                 background: #fff;
                 box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-                padding: 0;
-                overflow: hidden;
-                display: block;
-                z-index: 5000;
+                padding: 0; overflow: hidden; display: block; z-index: 5000;
             }
 
-            /* IMPORTANT: On mobile minimized, we MUST show the wrapper so the header is visible */
-            #admin-panel.minimized .admin-content-wrapper { display: block !important; }
-            
-            /* But hide the sections inside */
+            #admin-panel.minimized .admin-content-wrapper { display: block !important; height: 100%; }
             #admin-panel.minimized .admin-section { display: none !important; }
             
-            /* Style the header for the bar */
             #admin-panel.minimized .admin-header {
-                height: 100%;
-                border-bottom: none;
-                padding: 0 20px;
-                margin: 0;
-                display: flex;
-                align-items: center;
+                height: 100%; width: 100%; border-bottom: none;
+                padding: 0 20px; margin: 0; box-sizing: border-box;
+                display: flex; align-items: center;
             }
-            
-            /* Remove the bubble icon from desktop styles */
             #admin-panel.minimized::after { content: none; } 
 
             .admin-header { 
@@ -306,15 +288,13 @@
     <!-- Admin Panel -->
     <div id="admin-panel" class="glass-panel">
         <div class="admin-content-wrapper">
-            <!-- Header: Tapping THIS triggers minimize on mobile -->
-            <div class="admin-header" onclick="if(window.innerWidth < 768) toggleAdminMinimize()">
+            <!-- Header Click to Toggle -->
+            <div class="admin-header" onclick="toggleAdminMinimize()">
                 <span style="flex-grow:1;">ADMIN MODE</span>
                 <div style="display:flex; align-items:center;">
-                    <!-- Mobile Toggle Button (Visual only, propagates to header click) -->
                     <button id="min-btn" onclick="event.stopPropagation(); toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 18px; padding:8px; color:#555; background:#f0f0f0; border-radius:8px; margin-right:8px;">
                         ▼
                     </button>
-                    <!-- Close Button: STOPS propagation so it doesn't toggle minimize -->
                     <button onclick="event.stopPropagation(); closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 5px; color:#555; line-height:1;">✕</button>
                 </div>
             </div>
