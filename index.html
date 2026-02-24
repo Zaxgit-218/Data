@@ -119,7 +119,7 @@
         #admin-panel {
             position: absolute; top: 20px; right: 20px; z-index: 3000; width: 380px; display: none;
             max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; 
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Smooth spring-like transition */
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
         #admin-panel.visible { display: block; }
         
@@ -130,7 +130,8 @@
             display: flex; align-items: center; justify-content: center; background: var(--admin-red);
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        #admin-panel.minimized .admin-content-wrapper { display: none; }
+        /* Hide content on Desktop when minimized */
+        #admin-panel.minimized .admin-content-wrapper { display: none !important; }
         #admin-panel.minimized::after { content: "⚙️"; font-size: 24px; }
         
         .admin-header {
@@ -156,7 +157,6 @@
         .path-animation { stroke-dasharray: 12, 12; animation: dash 0.8s linear infinite; }
         @keyframes dash { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
         
-        /* Kiosk Icon */
         .kiosk-icon { background: transparent; }
         .kiosk-icon-inner { width: 24px; height: 24px; border-radius: 50%; background: var(--school-blue); border: 4px solid #fff; box-shadow: 0 0 15px rgba(0,0,0,0.6); position: relative; }
         .kiosk-icon-inner::after { content: ""; position: absolute; left: 50%; top: 50%; width: 24px; height: 24px; margin-left: -12px; margin-top: -12px; border-radius: 50%; border: 2px solid var(--golden-accent); animation: kioskPulse 1.8s ease-out infinite; }
@@ -205,31 +205,39 @@
                 box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
             }
 
-            /* Minimized = Collapsed to Bottom Bar */
+            /* Minimized Mobile State: Dropdown Bar */
             #admin-panel.minimized { 
                 width: 100%; 
-                height: 60px; /* Collapsed height (Header only) */
+                height: 60px; /* Collapsed height */
                 border-radius: 20px 20px 0 0;
                 top: auto; bottom: 0; right: 0; left: 0;
                 background: #fff;
                 box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
                 padding: 0;
                 overflow: hidden;
-                display: block; /* Override flex */
+                display: block;
+                z-index: 5000;
             }
 
-            /* When minimized on mobile, show the header inside the bar */
-            #admin-panel.minimized .admin-content-wrapper { display: block; }
-            #admin-panel.minimized .admin-section { display: none; } /* Hide content */
+            /* IMPORTANT: On mobile minimized, we MUST show the wrapper so the header is visible */
+            #admin-panel.minimized .admin-content-wrapper { display: block !important; }
+            
+            /* But hide the sections inside */
+            #admin-panel.minimized .admin-section { display: none !important; }
+            
+            /* Style the header for the bar */
             #admin-panel.minimized .admin-header {
                 height: 100%;
                 border-bottom: none;
                 padding: 0 20px;
                 margin: 0;
+                display: flex;
+                align-items: center;
             }
-            #admin-panel.minimized::after { content: none; } /* Remove bubble icon */
+            
+            /* Remove the bubble icon from desktop styles */
+            #admin-panel.minimized::after { content: none; } 
 
-            /* Admin Header in Drawer */
             .admin-header { 
                 position: sticky; top: 0; background: #fff; z-index: 10; 
                 padding-bottom: 10px; border-bottom: 1px solid #eee; 
@@ -295,12 +303,13 @@
     </div>
 
     <!-- Admin Panel -->
-    <div id="admin-panel" class="glass-panel" onclick="if(this.classList.contains('minimized')) toggleAdminMinimize()">
+    <div id="admin-panel" class="glass-panel">
         <div class="admin-content-wrapper">
-            <div class="admin-header">
-                <span onclick="toggleAdminMinimize()" style="flex-grow:1;">ADMIN MODE</span>
-                <div style="display:flex; align-items:center;">
-                    <!-- Mobile Collapse Toggle -->
+            <!-- Header (Click to toggle minimize on mobile) -->
+            <div class="admin-header" onclick="if(window.innerWidth < 768) toggleAdminMinimize()">
+                <span style="flex-grow:1;">ADMIN MODE</span>
+                <div style="display:flex; align-items:center;" onclick="event.stopPropagation()">
+                    <!-- Mobile Toggle Button -->
                     <button id="min-btn" onclick="toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 18px; padding:8px; color:#555; background:#f0f0f0; border-radius:8px; margin-right:8px;">
                         ▼
                     </button>
