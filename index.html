@@ -115,14 +115,15 @@
         #dest-photo-island #dest-photo-img { width: 100%; border-radius: 12px; display: block; box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
         #dest-photo-island .dest-photo-desc { font-size: 13px; color: #444; margin-top: 10px; line-height: 1.4; }
 
-        /* Admin Panel */
+        /* --- Admin Panel (Desktop Default) --- */
         #admin-panel {
             position: absolute; top: 20px; right: 20px; z-index: 3000; width: 380px; display: none;
-            max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; transition: all 0.3s ease;
+            max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; 
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Smooth spring-like transition */
         }
         #admin-panel.visible { display: block; }
         
-        /* Minimized State */
+        /* Desktop Minimized State (Bubble) */
         #admin-panel.minimized {
             width: 50px; height: 50px; overflow: hidden; padding: 0; border-radius: 50%;
             top: 20px; right: 20px; bottom: auto; left: auto; cursor: pointer;
@@ -135,6 +136,7 @@
         .admin-header {
             color: var(--admin-red); font-weight: 800; font-size: 16px; margin-bottom: 15px;
             display: flex; justify-content: space-between; position: sticky; top: 0; background: inherit; padding-top: 5px;
+            align-items: center;
         }
         .admin-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
         .admin-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #555; margin-bottom: 6px; display: block; }
@@ -172,20 +174,12 @@
 
         /* --- MOBILE SPECIFIC STYLES --- */
         @media (max-width: 768px) {
-            /* 1. Standby Screen: Smaller & Tighter */
             .standby-content h2 { font-size: 28px; }
             .standby-content h3 { font-size: 18px; margin-bottom: 25px; }
             .pulse-btn { padding: 12px 30px; font-size: 14px; }
 
-            /* 2. Top Search Bar: Compact and Semi-Transparent */
-            .overlay-container { 
-                width: 94%; 
-                left: 3%; 
-                top: 10px; 
-                transform: none; /* No slide-in effect on mobile for performance */
-            }
-            
-            /* Make inputs smaller and thinner on mobile */
+            /* Top Search Bar: Compact */
+            .overlay-container { width: 94%; left: 3%; top: 10px; transform: none; }
             .glass-panel { padding: 15px; border-radius: 16px; }
             .search-box input { padding: 10px 12px; font-size: 14px; height: 44px; margin-bottom: 5px; }
             .btn-navigate { padding: 12px; font-size: 14px; height: 44px; margin-top: 5px; }
@@ -193,56 +187,53 @@
             .school-logo { width: 40px; height: 40px; font-size: 10px; }
             .title-group h1 { font-size: 16px; }
 
-            /* 3. Photo Result: Bottom Sheet Style */
-            #dest-photo-island { 
-                width: 100%; 
-                left: 0; 
-                bottom: 0; 
-                transform: translateY(110%); /* Start hidden below screen */
-            }
+            /* Photo Result: Bottom Sheet */
+            #dest-photo-island { width: 100%; left: 0; bottom: 0; transform: translateY(110%); }
             #dest-photo-island.visible { transform: translateY(0); }
-            #dest-photo-island .glass-panel { 
-                border-radius: 20px 20px 0 0; /* Only round top */
-                border-bottom: none;
-                padding: 20px;
-            }
+            #dest-photo-island .glass-panel { border-radius: 20px 20px 0 0; border-bottom: none; padding: 20px; }
 
-            /* 4. Admin Panel: Bottom Drawer (Allows map tap on top half) */
+            /* --- ADMIN MOBILE: COLLAPSIBLE BOTTOM SHEET --- */
             #admin-panel { 
                 width: 100%; 
-                height: auto; 
-                max-height: 55vh; /* Takes up bottom 55% of screen */
-                top: auto; 
-                bottom: 0; 
-                right: 0; 
-                left: 0;
+                height: 55vh; /* Opened height */
+                max-height: 55vh;
+                top: auto; bottom: 0; right: 0; left: 0;
                 border-radius: 20px 20px 0 0; 
-                border-left: none; border-right: none; border-bottom: none;
+                border: none;
                 padding-bottom: 20px;
-                background: #fff; /* Solid background for visibility */
-            }
-            
-            /* Admin Header fixed inside the drawer */
-            .admin-header { 
-                position: sticky; 
-                top: 0; 
-                background: #fff; 
-                z-index: 10; 
-                padding-bottom: 10px; 
-                border-bottom: 1px solid #eee; 
+                background: #fff;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
             }
 
-            /* Minimized Admin Button: Small and accessible */
+            /* Minimized = Collapsed to Bottom Bar */
             #admin-panel.minimized { 
-                width: 45px; height: 45px; 
-                top: auto; bottom: 80px; /* Floating above bottom */
-                right: 20px; 
-                left: auto;
-                border-radius: 50%; 
-                z-index: 4000;
+                width: 100%; 
+                height: 60px; /* Collapsed height (Header only) */
+                border-radius: 20px 20px 0 0;
+                top: auto; bottom: 0; right: 0; left: 0;
+                background: #fff;
+                box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+                padding: 0;
+                overflow: hidden;
+                display: block; /* Override flex */
             }
 
-            /* Bigger Tap Targets for Admin Buttons */
+            /* When minimized on mobile, show the header inside the bar */
+            #admin-panel.minimized .admin-content-wrapper { display: block; }
+            #admin-panel.minimized .admin-section { display: none; } /* Hide content */
+            #admin-panel.minimized .admin-header {
+                height: 100%;
+                border-bottom: none;
+                padding: 0 20px;
+                margin: 0;
+            }
+            #admin-panel.minimized::after { content: none; } /* Remove bubble icon */
+
+            /* Admin Header in Drawer */
+            .admin-header { 
+                position: sticky; top: 0; background: #fff; z-index: 10; 
+                padding-bottom: 10px; border-bottom: 1px solid #eee; 
+            }
             .admin-btn { padding: 12px; margin-top: 8px; font-size: 14px; }
             .location-item { padding: 15px 10px; }
         }
@@ -303,20 +294,23 @@
         </div>
     </div>
 
+    <!-- Admin Panel -->
     <div id="admin-panel" class="glass-panel" onclick="if(this.classList.contains('minimized')) toggleAdminMinimize()">
         <div class="admin-content-wrapper">
             <div class="admin-header">
-                <span>ADMIN MODE</span>
-                <div>
-                    <button onclick="toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 15px; color:#555; line-height:1;">_</button>
-                    <button onclick="closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 10px; color:#555; line-height:1;">✕</button>
+                <span onclick="toggleAdminMinimize()" style="flex-grow:1;">ADMIN MODE</span>
+                <div style="display:flex; align-items:center;">
+                    <!-- Mobile Collapse Toggle -->
+                    <button id="min-btn" onclick="toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 18px; padding:8px; color:#555; background:#f0f0f0; border-radius:8px; margin-right:8px;">
+                        ▼
+                    </button>
+                    <button onclick="closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 5px; color:#555; line-height:1;">✕</button>
                 </div>
             </div>
             
             <div class="admin-section" style="margin-top:0; border:none; padding-top:0;">
                 <span class="admin-label">View Options</span>
                 <button class="admin-btn" style="background:#7f8c8d; margin-top:0;" onclick="toggleUserUI()">👁 Toggle User UI</button>
-                <p style="font-size:10px; color:#666; margin:5px 0 0 0;">*Hides the search box so you can see the map.</p>
             </div>
 
             <div class="admin-section">
@@ -615,7 +609,15 @@
 
         function toggleAdminMinimize() {
             const panel = document.getElementById('admin-panel');
+            const btn = document.getElementById('min-btn');
             panel.classList.toggle('minimized');
+            
+            // Update icon
+            if(panel.classList.contains('minimized')) {
+                btn.innerText = '▲'; 
+            } else {
+                btn.innerText = '▼';
+            }
         }
 
         function enterStandby() {
@@ -675,9 +677,11 @@
             } else { document.getElementById('admin-pin-error').textContent = "Incorrect PIN"; }
         }
         function closeAdmin() { 
-            document.getElementById('admin-panel').classList.remove('visible'); 
-            document.getElementById('admin-panel').classList.remove('minimized');
-            if(userUIHidden) toggleUserUI(); // Restore UI when closing admin
+            const panel = document.getElementById('admin-panel');
+            panel.classList.remove('visible'); 
+            panel.classList.remove('minimized');
+            document.getElementById('min-btn').innerText = '▼';
+            if(userUIHidden) toggleUserUI(); 
             if(pathMode) togglePathMode();
         }
     </script>
