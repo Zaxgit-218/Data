@@ -138,6 +138,7 @@
             color: var(--admin-red); font-weight: 800; font-size: 16px; margin-bottom: 15px;
             display: flex; justify-content: space-between; position: sticky; top: 0; background: inherit; padding-top: 5px;
             align-items: center;
+            cursor: pointer; /* Clickable header */
         }
         .admin-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
         .admin-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: #555; margin-bottom: 6px; display: block; }
@@ -305,15 +306,16 @@
     <!-- Admin Panel -->
     <div id="admin-panel" class="glass-panel">
         <div class="admin-content-wrapper">
-            <!-- Header (Click to toggle minimize on mobile) -->
+            <!-- Header: Tapping THIS triggers minimize on mobile -->
             <div class="admin-header" onclick="if(window.innerWidth < 768) toggleAdminMinimize()">
                 <span style="flex-grow:1;">ADMIN MODE</span>
-                <div style="display:flex; align-items:center;" onclick="event.stopPropagation()">
-                    <!-- Mobile Toggle Button -->
-                    <button id="min-btn" onclick="toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 18px; padding:8px; color:#555; background:#f0f0f0; border-radius:8px; margin-right:8px;">
+                <div style="display:flex; align-items:center;">
+                    <!-- Mobile Toggle Button (Visual only, propagates to header click) -->
+                    <button id="min-btn" onclick="event.stopPropagation(); toggleAdminMinimize()" title="Minimize" style="border:none; background:none; cursor:pointer; font-size: 18px; padding:8px; color:#555; background:#f0f0f0; border-radius:8px; margin-right:8px;">
                         ▼
                     </button>
-                    <button onclick="closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 5px; color:#555; line-height:1;">✕</button>
+                    <!-- Close Button: STOPS propagation so it doesn't toggle minimize -->
+                    <button onclick="event.stopPropagation(); closeAdmin()" title="Close" style="border:none; background:none; cursor:pointer; font-size: 24px; padding:0 5px; color:#555; line-height:1;">✕</button>
                 </div>
             </div>
             
